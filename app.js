@@ -128,6 +128,7 @@ app.get('/auth/linkedin', (req, res) => {
     console.log(`🔐 Redirecting to LinkedIn OAuth: ${authUrl}`);
     res.redirect(authUrl);
 });
+app.get('/status', (_, res) => res.send('OK'));
 
 /**
  * Route: GET /auth/linkedin/callback
@@ -440,7 +441,7 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(3001, () => {
     console.log('🚀 LinkedIn Comment Automation Service started!');
     console.log(`📡 Server running on http://localhost:${PORT}`);
     console.log('');
