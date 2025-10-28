@@ -1,0 +1,283 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// CODE NODE: \"Code in JavaScript1\"\n// ============================================\n\n// Helper function to safely extract AI response\nfunction safelyExtractAIMessage(aiResponse) {\n  try {\n    // Try different possible paths for AI response\n    let aiMessage = null;\n    \n    if (aiResponse?.json?.content?.[0]?.text) {\n      aiMessage = aiResponse.json.content[0].text;\n    } else if (aiResponse?.json?.message) {\n      aiMessage = aiResponse.json.message;\n    } else if (aiResponse?.json?.response) {\n      aiMessage = aiResponse.json.response;\n    } else if (aiResponse?.json?.text) {\n      aiMessage = aiResponse.json.text;\n    } else if (typeof aiResponse?.json === 'string') {\n      aiMessage = aiResponse.json;\n    } else if (typeof aiResponse === 'string') {\n      aiMessage = aiResponse;\n    }\n    \n    return aiMessage;\n  } catch (error) {\n    console.warn('Error extracting AI message:', error);\n    return null;\n  }\n}\n\n// Helper function to clean and sanitize AI comment for JSON\nfunction cleanAIComment(aiMessage) {\n  if (!aiMessage || typeof aiMessage !== 'string') {\n    return '';\n  }\n  \n  try {\n    // First pass: basic cleaning and normalization\n    let cleaned = aiMessage\n      // Remove control characters except tab, newline, carriage return\n      .replace(/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]/g, '')\n      // Replace newlines and carriage returns with spaces\n      .replace(/[\\r\\n]+/g, ' ')\n      // Collapse multiple spaces into single space\n      .replace(/\\s+/g, ' ')\n      // Remove any trailing/leading whitespace\n      .trim();\n    \n    // Second pass: JSON-safe escaping using native JSON.stringify\n    // This handles all special characters properly\n    cleaned = JSON.stringify(cleaned).slice(1, -1); // Remove surrounding quotes\n    \n    // Validate the result by parsing it back\n    JSON.parse('\"' + cleaned + '\"');\n    \n    return cleaned;\n  } catch (error) {\n    console.warn('Error cleaning AI comment, using fallback:', error);\n    try {\n      // Fallback 1: More aggressive cleaning but still try JSON.stringify\n      let fallback = aiMessage\n        .replace(/[\\r\\n\\t]/g, ' ')\n        .replace(/\\s+/g, ' ')\n        .trim();\n      \n      // Use JSON.stringify for safe escaping\n      fallback = JSON.stringify(fallback).slice(1, -1);\n      \n      // Validate\n      JSON.parse('\"' + fallback + '\"');\n      return fallback;\n    } catch (fallbackError) {\n      console.warn('Fallback also failed, using safe replacement:', fallbackError);\n      // Fallback 2: Ultra-safe - remove all special characters\n      return aiMessage\n        .replace(/[^a-zA-Z0-9\\s\\.,!?;:\\-()]/g, ' ')\n        .replace(/\\s+/g, ' ')\n        .trim() || 'Comment processing failed - special characters removed';\n    }\n  }\n}\n\n// Get input data\nconst posts = $('HTTP Request1').all();\nconst aiResponses = $input.all();\n\n// Patch them up with robust error handling\nconst patched = posts.map((postItem, i) => {\n  try {\n    const post = postItem?.json?.text || '';\n    const full_urn = postItem?.json?.full_urn || '';\n    \n    // Safely extract AI message\n    const aiMessage = safelyExtractAIMessage(aiResponses[i]);\n    \n    // Clean up AI comment with robust sanitization\n    const aiMessageClean = cleanAIComment(aiMessage);\n    \n    return {\n      json: {\n        post,\n        full_urn,\n        ai_comment: aiMessage || '',\n        ai_comment_clean: aiMessageClean,\n        processing_status: 'success'\n      }\n    };\n  } catch (error) {\n    console.error('Error processing item', i, ':', error);\n    return {\n      json: {\n        post: postItem?.json?.text || '',\n        full_urn: postItem?.json?.full_urn || '',\n        ai_comment: '',\n        ai_comment_clean: 'Error processing AI response',\n        processing_status: 'error',\n        error_message: error.message\n      }\n    };\n  }\n});\n\n// Return properly formatted array\nreturn patched;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -16
+      ],
+      "id": "899c0c98-5432-403a-9c62-bac58d214951",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-5-20250929",
+          "mode": "list",
+          "cachedResultName": "claude-sonnet-4-5-20250929"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=## Role: Web3 Thought Leader for LinkedIn Comments\n\nYou are a **crypto and Web3 thought leader** known for clear, insightful takes on blockchain, DeFi, and digital assets. Your job is to craft **short, high-impact comments** that add real value to professional discussions.\n\n---\n\n## Input\n\n**Original Post:** {{ $json.text }}\n\n---\n\n## Comment Guidelines\n\n### Goal\n\nDeliver **concise, thoughtful insights** — something that makes professionals stop scrolling and think.\n\n### Response Angles\n\n1. **Quick Technical Insight** – Clarify or expand on the tech or market logic.\n2. **Contrarian Thought** – Respectfully challenge a common assumption.\n3. **Business/Market Context** – Link the post to broader industry or regulatory trends.\n4. **Lesson or Observation** – Share a quick takeaway from experience.\n\n---\n\n## Tone & Style\n\n* Professional and authentic — not corporate, not hyped.\n* 2–4 sentences max.\n* No emojis or hashtags.\n* Speak like a peer in the industry — concise, credible, and real.\n* End with a question or sharp observation when it fits.\n\n---\n\n## Output\n\nProvide **only the final LinkedIn comment**, written naturally as a Web3 professional. No labels or formatting — just the comment.\n\n---\nReply:\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        848,
+        -16
+      ],
+      "id": "85d2354a-20eb-4b56-b86b-22f5a333786a",
+      "name": "Message a model1",
+      "credentials": {
+        "anthropicApi": {
+          "id": "iYXdtaKbS6qgi8hj",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1424,
+        -32
+      ],
+      "id": "7d47b26f-cb99-465b-95da-26d8eaaf70e9",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://commenter-qcry.onrender.com/comment",
+        "sendBody": true,
+        "specifyBody": "json",
+  "jsonBody": "={\n  \"urn\": \"{{ $json.full_urn || '' }}\",\n  \"comment\": \"{{ $json.ai_comment_clean || 'Comment processing failed' }}\"\n}",
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxRetries": 2
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1872,
+        -16
+      ],
+      "name": "Post Comment",
+      "id": "7f7cccdc-49c8-43c2-84fb-f67e5e334790"
+    }
+  ],
+  "connections": {
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Post Comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Comment": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Code in JavaScript1": [
+      {
+        "post": "Day 15 – We did it!\n After 15 days of non-stop building, debugging, and learning, we’ve completed our Mini DeFi DEX from scratch! 🔥\nFrom writing smart contracts in Solidity to simulating swaps, managing liquidity, and finally connecting it all with a React + Ethers.js frontend — it’s been an intense but incredibly rewarding sprint.\n👨‍💻 What we accomplished:\n ✅ Custom ERC20 tokens\n ✅ Liquidity Pool smart contract\n ✅ Swap logic with simulated pricing\n ✅ Frontend UI with Ethers.js\n ✅ Anvil-based local testing environment\nThis was more than just a project—it was proof that consistency compounds.\n We’re wrapping this 15-day challenge today with a full end-to-end working DEX.\n🎥 Final video is live on YouTube: https://lnkd.in/dzhX3Du8\n 🙏 Thanks to everyone who supported or followed along. Excited to build what’s next!\n#DeFi #Solidity #Ethereum #EthersJS #FrontendDevelopment #Blockchain #SmartContracts #BuildInPublic #CryptoDev",
+        "full_urn": "urn:li:ugcPost:7323792478447288320",
+        "ai_comment": "Congrats on shipping. The hardest part of building a DEX isn't the swap math or liquidity curves—it's understanding why real protocols obsess over MEV protection, oracle manipulation, and slippage tolerances. Now that you've got the mechanics down, curious what surprised you most when things didn't behave like the tutorials said they would?",
+        "ai_comment_clean": "Congrats on shipping. The hardest part of building a DEX isn't the swap math or liquidity curves—it's understanding why real protocols obsess over MEV protection, oracle manipulation, and slippage tolerances. Now that you've got the mechanics down, curious what surprised you most when things didn't behave like the tutorials said they would?"
+      },
+      {
+        "post": "Day 14 of 15\n Today, we brought our faucet to life with a smooth, functional frontend! 💧✨\n Built using ethers.js, the UI connects to your wallet, lets you request ETH, and interacts seamlessly with our RabbitMQ-powered backend.\n🔍 Explored:\nethers.js wallet connection & signing\nSending transactions from frontend\nError handling & user flows\nBackend↔Frontend integration\nThis faucet will be core to onboarding flows in Web3 products like dev environments, dApps, or hackathons.\n Next up: making it even more powerful with session keys and smart auth 🔐\n🎥 Watch the full build + breakdown: https://lnkd.in/dzaMRjAw\n#web3 #blockchain #ethersjs #frontenddev #solidity #javascript #smartcontracts #reactjs",
+        "full_urn": "urn:li:ugcPost:7323302421789655043",
+        "ai_comment": "Smart integration pattern here. Faucets often get overlooked as just dev tools, but they're actually one of the cleanest examples of Web3 UX fundamentals—wallet connection, transaction signing, state management, and error boundaries all in one flow. The session keys layer you're adding next is where it gets interesting, especially if you're thinking about progressive onboarding where users don't need to sign every micro-transaction. Are you planning to abstract the signing flow entirely for first-time users, or keep it explicit for education?",
+        "ai_comment_clean": "Smart integration pattern here. Faucets often get overlooked as just dev tools, but they're actually one of the cleanest examples of Web3 UX fundamentals—wallet connection, transaction signing, state management, and error boundaries all in one flow. The session keys layer you're adding next is where it gets interesting, especially if you're thinking about progressive onboarding where users don't need to sign every micro-transaction. Are you planning to abstract the signing flow entirely for first-time users, or keep it explicit for education?"
+      },
+      {
+        "post": "Day 13/15 — Building a Web3 Backend with RabbitMQ & Ethers.js\nToday I created a real-time backend that listens for swap events using RabbitMQ queues and Ethers.js JSON-RPC connection to the Ethereum network.\n🔧 Stack:\nNode.js + Express\nRabbitMQ (AMQP)\nEthers.js for blockchain interaction\nThis architecture enables asynchronous, event-driven smart contract interactions, which is super useful for DeFi, NFT platforms, or any dApp with real-time backend requirements.\nFull Video Here:https://lnkd.in/dxmNVBUq\n#web3 #blockchain #nodejs #rabbitmq #ethersjs #15Days15Contracts #backend #DeFi #smartcontracts #developer",
+        "full_urn": "urn:li:ugcPost:7322963528519180289",
+        "ai_comment": "RabbitMQ is a smart choice here — too many devs try to handle event processing synchronously and wonder why their infrastructure buckles under load. The pattern you're building becomes critical once you're tracking hundreds of contracts or filtering high-frequency DEX activity. What's your retry strategy when RPC nodes flake out mid-stream?",
+        "ai_comment_clean": "RabbitMQ is a smart choice here — too many devs try to handle event processing synchronously and wonder why their infrastructure buckles under load. The pattern you're building becomes critical once you're tracking hundreds of contracts or filtering high-frequency DEX activity. What's your retry strategy when RPC nodes flake out mid-stream?"
+      },
+      {
+        "post": "Day 12 of 15 Days 15 Smart Contracts: Building a Decentralized Exchange (DEX) 🚀\nIn today’s video, we took a big step in our DEX development journey! We implemented key components like Liquidity Pools, LP Tokens, and Token Swaps. These features are crucial for enabling seamless token exchanges within the DEX.\nHere’s what we covered:\nCreating the LP Token contract to mint and burn tokens\nBuilding the Liquidity Pool contract to manage token reserves\nAdding and removing liquidity with automated minting/burning of LP tokens\nImplementing token swaps with a fee mechanism\nTesting and debugging to ensure everything works smoothly\nWatch the video to see how we integrated these features to build a functional decentralized exchange! 👨‍💻💻\n🎥https://lnkd.in/dNBadMDy",
+        "full_urn": "urn:li:activity:7322545867222081536",
+        "ai_comment": "The LP token minting/burning mechanism you built is arguably the most underrated piece of DEX architecture. Most developers focus on swap logic, but properly handling liquidity provider share accounting is what separates amateur implementations from production-ready systems. Curious how you approached impermanent loss calculation for your LPs—did you surface that in the UI or leave it for users to track externally?",
+        "ai_comment_clean": "The LP token minting/burning mechanism you built is arguably the most underrated piece of DEX architecture. Most developers focus on swap logic, but properly handling liquidity provider share accounting is what separates amateur implementations from production-ready systems. Curious how you approached impermanent loss calculation for your LPs—did you surface that in the UI or leave it for users to track externally?"
+      },
+      {
+        "post": "Day 11 of Building a Decentralized Exchange (DEX) 🚀\nIn today's video, I deployed two ERC-20 tokens (Token A and Token B) and created a simple faucet to distribute them for testing purposes. This is a critical step in building our DEX, as it allows us to simulate token transfers and liquidity provision.\nHere’s what we covered:\nDeploying ERC-20 tokens using Solidity\nCreating a faucet contract to mint and distribute tokens\nTesting liquidity addition and token swaps in a decentralized exchange\nCheck out the video to learn how to set up your own faucet and deploy tokens to test a DEX in action! 👨‍💻💻\nhttps://lnkd.in/dEibCgXF\n#DeFi #Blockchain #SmartContracts #Solidity #ERC20 #Faucet #LiquidityPool #DEX #Crypto #Web3",
+        "full_urn": "urn:li:ugcPost:7322204237101260801",
+        "ai_comment": "Nice to see the faucet approach for testnet distribution. One thing often overlooked in early DEX builds is simulating actual market conditions beyond just the happy path—slippage edge cases, failed swaps due to insufficient liquidity, and frontrunning scenarios all surface different contract vulnerabilities. Are you planning to stress test with imbalanced pools or extreme price movements before mainnet?",
+        "ai_comment_clean": "Nice to see the faucet approach for testnet distribution. One thing often overlooked in early DEX builds is simulating actual market conditions beyond just the happy path—slippage edge cases, failed swaps due to insufficient liquidity, and frontrunning scenarios all surface different contract vulnerabilities. Are you planning to stress test with imbalanced pools or extreme price movements before mainnet?"
+      },
+      {
+        "post": "👾🫡\nFeatured on the cover story — wasn’t even on the bucket list, but damn it feels good.\nHuge thanks to — Varsha Veliyath for the cover story feature(Pages 18-19)\nStill at Day 1 — the real work is just beginning\nHuge thanks to my amazing team — DEV PATIL, Mandar Nikam, Dhairya Chawda, and Harvi Pancholi for winning the Illuminati Hackathon(Page-8). A\nSuper grateful for the recognition in Bits N Bytes — but trust me, I’m just getting started.\n#grind",
+        "full_urn": "urn:li:ugcPost:7322155666821771264",
+        "ai_comment": "Congrats on the feature and the hackathon win. The \"Day 1\" mindset after public recognition is rare and worth calling out — most teams plateau right when visibility peaks. What problem were you solving at Illuminati that the judges connected with?",
+        "ai_comment_clean": "Congrats on the feature and the hackathon win. The \"Day 1\" mindset after public recognition is rare and worth calling out — most teams plateau right when visibility peaks. What problem were you solving at Illuminati that the judges connected with?"
+      },
+      {
+        "post": "Day 10/15 of #15Days15Contracts\nWe’re kicking off a full-stack Mini-DEX build – smart contracts, frontend, LP tokens, and more.\nToday:\nFunctioning of a Smart Contract\nCEX vs DEX 🏦\nWhat powers a DEX like Uniswap ⚙️\nLiquidity pools, swaps, LP tokens\nOur 5-day plan to build it all from scratch\nThis is a real hands-on journey into DeFi protocols. Let’s build something awesome.\n🎥:https://lnkd.in/dN2eARhe\n#DeFi #Solidity #Web3 #Blockchain #DEX #CryptoDev",
+        "full_urn": "urn:li:ugcPost:7321509281772519425",
+        "ai_comment": "Building a mini-DEX from scratch is one of the best ways to understand the coordination problem at the heart of DeFi. Most people use Uniswap without realizing the elegance of constant product AMMs—until they've debugged slippage calculations and impermanent loss scenarios themselves.\n\nCurious how you're handling edge cases like low liquidity swaps and sandwich attack vectors in your implementation?",
+        "ai_comment_clean": "Building a mini-DEX from scratch is one of the best ways to understand the coordination problem at the heart of DeFi. Most people use Uniswap without realizing the elegance of constant product AMMs—until they've debugged slippage calculations and impermanent loss scenarios themselves. Curious how you're handling edge cases like low liquidity swaps and sandwich attack vectors in your implementation?"
+      },
+      {
+        "post": "Day 9 of my 15 Days 15 Contracts journey!\nToday I built a basic Liquidity Pool in Solidity, mimicking how decentralized exchanges like Uniswap work under the hood.\n🔄 Two ERC20 tokens\n 💧 Add liquidity to a pool\n ⚖️ Swap tokens with price logic\n 📈 Get real-time token prices\nThis hands-on project gave me a solid understanding of price discovery and reserve-based swaps.\nBuilt entirely with Foundry and OpenZeppelin.\n🎥:https://lnkd.in/dzhr3ZEs\n👾:https://lnkd.in/dKNfsJVd\n#Solidity #DeFi #SmartContracts #Blockchain #BuildInPublic #Web3",
+        "full_urn": "urn:li:ugcPost:7321083545576173570",
+        "ai_comment": "Building an AMM from scratch is one of those rare exercises that forces you to understand what constant product formulas actually protect against. Most devs never touch the reserve ratio math directly, so they miss why slippage tolerance and sandwich attacks are architectural, not just UI problems.\n\nCurious what surprised you most when the price impact math hit real numbers in your tests?",
+        "ai_comment_clean": "Building an AMM from scratch is one of those rare exercises that forces you to understand what constant product formulas actually protect against. Most devs never touch the reserve ratio math directly, so they miss why slippage tolerance and sandwich attacks are architectural, not just UI problems. Curious what surprised you most when the price impact math hit real numbers in your tests?"
+      },
+      {
+        "post": "Day 8 of my #15Days15Contracts challenge 🧑‍💻\nToday, I built an NFT contract inspired by none other than Virat Kohli 🐐\n ⚙️ Tech Stack:\nSolidity (ERC721URIStorage)\nIPFS for token metadata (Pinata)\nMint function restricted to contract owner\nDeployed & tested using Foundry\nSmart contracts don’t lie—Kohli is forever on-chain now.\nWould love feedback from fellow builders!\n #NFT #Solidity #BlockchainDev #Foundry #ViratKohli #Web3Builders\nhttps://lnkd.in/dKz-28dt",
+        "full_urn": "urn:li:activity:7320880217189707776",
+        "ai_comment": "Nice progression through the challenge. One thing worth considering as you scale: ERC721URIStorage is gas-heavy for batch operations since it stores URI per token. If you're planning any drops or multi-mint functionality, ERC721A or a base URI pattern might be worth benchmarking.\n\nWhat made you choose owner-only minting over a public sale mechanism?",
+        "ai_comment_clean": "Nice progression through the challenge. One thing worth considering as you scale: ERC721URIStorage is gas-heavy for batch operations since it stores URI per token. If you're planning any drops or multi-mint functionality, ERC721A or a base URI pattern might be worth benchmarking. What made you choose owner-only minting over a public sale mechanism?"
+      },
+      {
+        "post": "Day 7 of my 15 Smart Contract in 15 days!\n\nToday, I extended my BuyMeACoffee dApp by deploying a Factory Contract using Foundry. This enables users to deploy their own mini BuyMeACoffee contracts on the blockchain.\n\nMy actions:\n\n1. Created and deployed the factory using Forge’s create command.\n2. Allowed it to deploy custom coffee contracts via the cast send command.\n3. Integrated all components into the frontend using Ethers.js.\n4. Resolved event decoding and empty state issues.\n\n👾Github Repo:https://lnkd.in/dPhmihtY\n🎥 Full Video here:https://lnkd.in/dPpFqJTW",
+        "full_urn": "urn:li:ugcPost:7320437893452197888",
+        "ai_comment": "Factory patterns are underrated for onboarding — they let users own their contract instance without worrying about deployment complexity. The real power here is combining permissionless infrastructure with a clean UX layer, which is exactly what mainstream adoption needs. Curious how you're handling gas efficiency when spinning up multiple contracts versus using a single shared contract with namespaced state?",
+        "ai_comment_clean": "Factory patterns are underrated for onboarding — they let users own their contract instance without worrying about deployment complexity. The real power here is combining permissionless infrastructure with a clean UX layer, which is exactly what mainstream adoption needs. Curious how you're handling gas efficiency when spinning up multiple contracts versus using a single shared contract with namespaced state?"
+      }
+    ],
+    "Message a model1": [
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "Congrats on shipping. The hardest part of building a DEX isn't the swap math or liquidity curves—it's understanding why real protocols obsess over MEV protection, oracle manipulation, and slippage tolerances. Now that you've got the mechanics down, curious what surprised you most when things didn't behave like the tutorials said they would?"
+          }
+        ]
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "Smart integration pattern here. Faucets often get overlooked as just dev tools, but they're actually one of the cleanest examples of Web3 UX fundamentals—wallet connection, transaction signing, state management, and error boundaries all in one flow. The session keys layer you're adding next is where it gets interesting, especially if you're thinking about progressive onboarding where users don't need to sign every micro-transaction. Are you planning to abstract the signing flow entirely for first-time users, or keep it explicit for education?"
+          }
+        ]
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "RabbitMQ is a smart choice here — too many devs try to handle event processing synchronously and wonder why their infrastructure buckles under load. The pattern you're building becomes critical once you're tracking hundreds of contracts or filtering high-frequency DEX activity. What's your retry strategy when RPC nodes flake out mid-stream?"
+          }
+        ]
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "The LP token minting/burning mechanism you built is arguably the most underrated piece of DEX architecture. Most developers focus on swap logic, but properly handling liquidity provider share accounting is what separates amateur implementations from production-ready systems. Curious how you approached impermanent loss calculation for your LPs—did you surface that in the UI or leave it for users to track externally?"
+          }
+        ]
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "Nice to see the faucet approach for testnet distribution. One thing often overlooked in early DEX builds is simulating actual market conditions beyond just the happy path—slippage edge cases, failed swaps due to insufficient liquidity, and frontrunning scenarios all surface different contract vulnerabilities. Are you planning to stress test with imbalanced pools or extreme price movements before mainnet?"
+          }
+        ]
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "Congrats on the feature and the hackathon win. The \"Day 1\" mindset after public recognition is rare and worth calling out — most teams plateau right when visibility peaks. What problem were you solving at Illuminati that the judges connected with?"
+          }
+        ]
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "Building a mini-DEX from scratch is one of the best ways to understand the coordination problem at the heart of DeFi. Most people use Uniswap without realizing the elegance of constant product AMMs—until they've debugged slippage calculations and impermanent loss scenarios themselves.\n\nCurious how you're handling edge cases like low liquidity swaps and sandwich attack vectors in your implementation?"
+          }
+        ]
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "Building an AMM from scratch is one of those rare exercises that forces you to understand what constant product formulas actually protect against. Most devs never touch the reserve ratio math directly, so they miss why slippage tolerance and sandwich attacks are architectural, not just UI problems.\n\nCurious what surprised you most when the price impact math hit real numbers in your tests?"
+          }
+        ]
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "Nice progression through the challenge. One thing worth considering as you scale: ERC721URIStorage is gas-heavy for batch operations since it stores URI per token. If you're planning any drops or multi-mint functionality, ERC721A or a base URI pattern might be worth benchmarking.\n\nWhat made you choose owner-only minting over a public sale mechanism?"
+          }
+        ]
+      },
+      {
+        "content": [
+          {
+            "type": "text",
+            "text": "Factory patterns are underrated for onboarding — they let users own their contract instance without worrying about deployment complexity. The real power here is combining permissionless infrastructure with a clean UX layer, which is exactly what mainstream adoption needs. Curious how you're handling gas efficiency when spinning up multiple contracts versus using a single shared contract with namespaced state?"
+          }
+        ]
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e2ef0950b981db87d0759e725a980ed8b8025a3f96321737708b76a27d24dc03"
+  }
+}
